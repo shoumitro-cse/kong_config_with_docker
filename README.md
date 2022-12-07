@@ -5,7 +5,7 @@
 ```
 
 # admin GUI url
-http://localhost:8002
+http://localhost:4002
 
 # admin listen url
 http://localhost:4001/consumers/login-server/jwt
@@ -13,6 +13,9 @@ http://localhost:4001/consumers/login-server/jwt
 # Proxy base url
 http://localhost:4000
 
+
+# jwt token generate
+http://jwt.io/
 ```
 
 
