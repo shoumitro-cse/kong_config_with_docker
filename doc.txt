@@ -1,0 +1,171 @@
+https://gist.github.com/pantsel/73d949774bd8e917bfd3d9745d71febf
+https://docs.konghq.com/gateway/latest/install/docker/
+https://hub.docker.com/_/kong
+https://konghq.com/resources/videos/installing-kongs-api-gateway-with-docker
+
+# authentication
+https://docs.konghq.com/gateway/3.0.x/get-started/key-authentication/
+
+# jwt
+https://www.youtube.com/watch?v=OjF95vVldxY
+https://konghq.com/blog/jwt-kong-gateway?utm_source=youtube&utm_medium=social&utm_campaign=community
+
+# jwt url
+http://localhost:4001/consumers/login-server/jwt
+http://localhost:4000
+
+
+psql 'postgres://meektecdbuser:MeektecIt123@192.211.62.226:5432/postgres?sslmode=disable'
+psql 'postgres://kong:kongpass@kong-database:5431/postgres?sslmode=disable'
+
+psql 'postgresql://kong:kongpass@kong-database:5431/kong'
+psql 'postgres://kong:kongpass@0.0.0.0:5431/postgres?sslmode=disable'
+psql 'postgres://kong:kongpass@0.0.0.0:5432/postgres?sslmode=disable'
+psql -h localhost -p 5432 -U kong -d kong # -d = database
+psql -h localhost -p 5431 -U kong -d postgres # -d = database
+
+psql 'postgresql://postgres:1234@127.0.0.1:5432/postgres'
+
+/opt/PostgreSQL/10/bin/pg_ctl -D /opt/PostgreSQL/10/data stop
+
+CREATE USER kong WITH PASSWORD 'kongpass';
+CREATE DATABASE kong;
+GRANT ALL PRIVILEGES ON DATABASE kong TO kong;
+GRANT ALL PRIVILEGES ON DATABASE postgres TO kong;
+psql 'postgresql://kong:kongpass@127.0.0.1:5432/kong'
+psql 'postgresql://postgres:1234@127.0.0.1:5432/postgres'
+
+docker-compose -f docker-compose-oss.yml  up --build
+docker-compose up <service name>  
+docker-compose up kong-database  
+ip addr show docker0
+ping 172.26.0.1
+ping 172.26.0.2
+
+
+
+docker run -d --name kong-database \
+               -p 5433:5432 \
+               -e "POSTGRES_USER=kong" \
+               -e "POSTGRES_DB=kong" \
+               -e "POSTGRES_PASSWORD=kong" \
+               postgres:9.6 
+
+psql 'postgresql://kong:kong@127.0.0.1:5432/kong'               
+psql 'postgresql://kong:kong@0.0.0.0:5433/kong'    
+               
+docker run -d --name kong-migration \
+     -e "KONG_DATABASE=postgres" \
+     -e "KONG_PG_HOST=10.10.10.11" \
+     -e "KONG_PG_USER=kong" \
+     -e "KONG_PG_PASSWORD=kong" \
+     -e "KONG_PG_PORT=5433" \
+     kong:latest kong migrations bootstrap --vv
+
+docker exec -it kong-migration bash
+docker exec -it kong-database  bash
+
+docker stop kong-migration kong-database
+docker rm kong-migration kong-database    
+
+# for oss
+docker network create kong-net
+ 
+docker run -d --name kong-database --network=kong-net -p 5431:5432 -e "POSTGRES_USER=kong" -e "POSTGRES_DB=postgres" -e "POSTGRES_PASSWORD=kongpass" postgres:9.6
+
+
+docker run -d --name kong-migration --network=kong-net -e "KONG_DATABASE=postgres" -e "KONG_PG_HOST=kong-database" -e "KONG_PG_PASSWORD=kongpass" -e "KONG_PG_PORT=5431" kong:1.0.3-alpine kong migrations bootstrap --vv
+
+# other kong-migration 
+docker run -d --name kong-migration --network=kong-net --add-host host.docker.internal:host-gateway -e "KONG_DATABASE=postgres" -e "KONG_PG_HOST=host.docker.internal" -e "KONG_PG_PASSWORD=kongpass" -e "KONG_PG_USER=kong" kong:1.0.3-alpine kong migrations bootstrap
+
+
+docker run -d --name kong-gateway --network=kong-net -e "KONG_DATABASE=postgres" -e "KONG_PG_HOST=kong-database" -e "KONG_PG_USER=kong" -e "KONG_PG_PASSWORD=kongpass" -e "KONG_PG_PORT=5431" -e "KONG_PROXY_ACCESS_LOG=/dev/stdout" -e "KONG_ADMIN_ACCESS_LOG=/dev/stdout" -e "KONG_PROXY_ERROR_LOG=/dev/stderr" -e "KONG_ADMIN_ERROR_LOG=/dev/stderr" -e "KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl" -p 8002:8000 -p 8443:8443 -p 127.0.0.1:8001:8001 -p 127.0.0.1:8444:8444 kong:3.0.1
+
+
+docker stop kong-gateway kong-database
+docker rm kong-gateway kong-database
+
+docker logs kong-gateway
+
+curl -i -X GET --url http://localhost:8001/services
+
+ docker exec -it kong-gateway kong reload
+ 
+docker exec -it kong-gateway kong config init /home/kong/kong.yml
+docker exec -it kong-gateway cat /home/kong/kong.yml >> kong.yml
+
+
+
+
+# Install Kong Gateway in DB-less mode
+
+docker network create kong-net
+
+# for oss
+docker run -d --name kong-dbless \
+  --network=kong-net \
+  -v "$(pwd):/kong/declarative/" \
+  -e "KONG_DATABASE=off" \
+  -e "KONG_DECLARATIVE_CONFIG=/kong/declarative/kong.yml" \
+  -e "KONG_PROXY_ACCESS_LOG=/dev/stdout" \
+  -e "KONG_ADMIN_ACCESS_LOG=/dev/stdout" \
+  -e "KONG_PROXY_ERROR_LOG=/dev/stderr" \
+  -e "KONG_ADMIN_ERROR_LOG=/dev/stderr" \
+  -e "KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl" \
+  -p 8002:8000 \
+  -p 8443:8443 \
+  -p 127.0.0.1:8001:8001 \
+  -p 127.0.0.1:8444:8444 \
+  kong:3.0.1
+  
+ 
+ # GUI
+ docker run -d --name kong-dbless \
+  --network=kong-net \
+  -v "$(pwd):/kong/declarative/" \
+  -e "KONG_DATABASE=off" \
+  -e "KONG_DECLARATIVE_CONFIG=/kong/declarative/kong.yml" \
+  -e "KONG_PROXY_ACCESS_LOG=/dev/stdout" \
+  -e "KONG_ADMIN_ACCESS_LOG=/dev/stdout" \
+  -e "KONG_PROXY_ERROR_LOG=/dev/stderr" \
+  -e "KONG_ADMIN_ERROR_LOG=/dev/stderr" \
+  -e "KONG_ADMIN_LISTEN=0.0.0.0:8001" \
+  -e "KONG_ADMIN_GUI_URL=http://localhost:8002" \
+  -e KONG_LICENSE_DATA \
+  -p 8006:8000 \
+  -p 8443:8443 \
+  -p 8001:8001 \
+  -p 8444:8444 \
+  -p 8002:8002 \
+  -p 8445:8445 \
+  -p 8003:8003 \
+  -p 8004:8004 \
+  kong/kong-gateway:3.0.1.0
+   
+ docker stop kong-dbless
+ docker rm kong-dbless
+ 
+docker exec -it kong-dbless kong config init /home/kong/kong.yml
+docker exec -it kong-dbless cat /home/kong/kong.yml >> kong.yml
+
+ # enter here
+ http://localhost:8001
+ http://localhost:8001/config
+ 
+ 
+ # This guide assumes you named the file kong.yml.
+ _format_version: "3.0"
+ _transform: true
+
+ services:
+ - host: mockbin.org
+   name: example_service
+   port: 80
+   protocol: http
+   routes:
+   - name: example_route
+     paths:
+     - /mock
+     strip_path: true
+

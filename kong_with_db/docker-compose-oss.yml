@@ -1,0 +1,74 @@
+version: "3"
+
+networks:
+ kong-net:
+  driver: bridge
+
+services:
+
+  #######################################
+  # Postgres: The database used by Kong
+  #######################################
+  kong-database-oss:
+    container_name: kong-database-oss
+    image:  postgres:9.6
+    #restart: always
+    networks:
+      - kong-net
+    environment:
+      POSTGRES_USER: kong
+      POSTGRES_DB: kong
+      POSTGRES_PASSWORD: kongpass
+    ports:
+      - "5430:5432"
+
+  #######################################
+  # Kong database migration
+  #######################################
+  kong-migration-oss:
+    container_name: kong-migration-oss
+    image: kong:3.0.1
+    command: "kong migrations bootstrap"
+    networks:
+      - kong-net
+    #restart: on-failure
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-database
+      KONG_PG_PASSWORD: kongpass
+      KONG_PG_PORT: 5430
+    links:
+      - kong-database-oss
+    depends_on:
+      - kong-database-oss
+
+  #######################################
+  # Kong: The API Gateway
+  #######################################
+  kong-oss:
+    container_name: kong-gateway-oss
+    image:  kong:3.0.1
+    #restart: always
+    networks:
+      - kong-net
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-database
+      KONG_PG_USER: kong
+      KONG_PG_PORT: 5430
+      KONG_PG_PASSWORD: kongpass
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001, 0.0.0.0:8444 ssl
+    depends_on:
+      - kong-migration-oss
+      - kong-database-oss
+    ports:
+      - "8448:8443"
+      - "8449:8444"
+      - "8006:8000"
+      - "8007:8001"
+      - "8008:8002"
+      - "8009:8003"
