@@ -28,3 +28,11 @@ docker rm kong-gateway-dbless
 docker-compose up --build
 
 ```
+
+
+## logs
+```
+mkdir logs
+cd logs
+chmod 777 file.log 
+```

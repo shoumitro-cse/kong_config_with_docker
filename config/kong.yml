@@ -32,26 +32,7 @@ routes:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#############################################
 # services:
 
 # - name: feedback-social
@@ -74,14 +55,12 @@ routes:
 #   - name: feedback-social-media
 #     paths:
 #     - /media
+#############################################
 
 
 
 
-
-
-
-
+################### excer ##########################
 # consumers:
 # - username: user
 

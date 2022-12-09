@@ -6,6 +6,11 @@ https://konghq.com/resources/videos/installing-kongs-api-gateway-with-docker
 # authentication
 https://docs.konghq.com/gateway/3.0.x/get-started/key-authentication/
 
+# kong load balancing
+https://www.youtube.com/watch?v=8vnLVTEjJZ4&list=PLBm4OGt1_S7aKTFWL2nKbyLcu6H2pRi2Q&index=9
+https://github.com/sinawic/4yt/tree/master/kong
+
+
 # jwt
 https://www.youtube.com/watch?v=OjF95vVldxY
 https://konghq.com/blog/jwt-kong-gateway?utm_source=youtube&utm_medium=social&utm_campaign=community
